@@ -50,6 +50,21 @@ export const App: React.FC = () => {
       .catch(() => setErrorMessage('Unable to update a todo.'));
   };
 
+  const handleDeleteTodo = (todoId: number) => {
+    setErrorMessage('');
+
+    todosApi
+      .deleteTodo(todoId)
+      .then(() => {
+        setTodos(currentTodos =>
+          currentTodos.filter(todo => todo.id !== todoId),
+        );
+      })
+      .catch(() => {
+        setErrorMessage('Unable to delete a todo');
+      });
+  };
+
   if (!todosApi.USER_ID) {
     return <UserWarning />;
   }
@@ -122,6 +137,7 @@ export const App: React.FC = () => {
                 type="button"
                 className="todo__remove"
                 data-cy="TodoDelete"
+                onClick={() => handleDeleteTodo(todo.id)}
               >
                 ×
               </button>
@@ -199,7 +215,12 @@ export const App: React.FC = () => {
           { hidden: !errorMessage },
         )}
       >
-        <button data-cy="HideErrorButton" type="button" className="delete" />
+        <button
+          data-cy="HideErrorButton"
+          type="button"
+          className="delete"
+          onClick={() => setErrorMessage('')}
+        />
         {/* show only one message at a time */}
         {errorMessage}
       </div>

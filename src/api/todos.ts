@@ -12,3 +12,7 @@ export const updateTodo = (todoId: number, completed: boolean) => {
     completed,
   });
 };
+
+export const deleteTodo = (todoId: number) => {
+  return client.delete(`/todos/${todoId}`);
+};
