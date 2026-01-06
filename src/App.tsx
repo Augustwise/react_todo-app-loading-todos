@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { UserWarning } from './UserWarning';
-import { getTodos, USER_ID } from './api/todos';
+import * as todosApi from './api/todos';
 import type { Todo } from './types/Todo';
 
 export const App: React.FC = () => {
@@ -13,7 +13,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     setErrorMessage('');
 
-    getTodos()
+    todosApi
+      .getTodos()
       .then(setTodos)
       .catch(() => setErrorMessage('Unable to load todos'));
   }, []);
@@ -24,7 +25,7 @@ export const App: React.FC = () => {
   );
 
   const hasCompletedTodos = useMemo(
-    () => todos.some(todo => todo.completed),
+    () => todos.filter(todo => todo.completed).length > 0,
     [todos],
   );
 
@@ -33,7 +34,23 @@ export const App: React.FC = () => {
     [todos],
   );
 
-  if (!USER_ID) {
+  const handleTodoStatusChange = (
+    todoId: number,
+    currentCompleted: boolean,
+  ) => {
+    setErrorMessage('');
+
+    todosApi
+      .updateTodo(todoId, !currentCompleted)
+      .then(updatedTodo => {
+        setTodos(previousTodos =>
+          previousTodos.map(todo => (todo.id === todoId ? updatedTodo : todo)),
+        );
+      })
+      .catch(() => setErrorMessage('Unable to update a todo.'));
+  };
+
+  if (!todosApi.USER_ID) {
     return <UserWarning />;
   }
 
@@ -70,7 +87,10 @@ export const App: React.FC = () => {
               data-cy="Todo"
               className={classNames('todo', { completed: todo.completed })}
             >
-              <label className="todo__status-label">
+              <label
+                className="todo__status-label"
+                onClick={() => handleTodoStatusChange(todo.id, todo.completed)}
+              >
                 <input
                   data-cy="TodoStatus"
                   type="checkbox"
