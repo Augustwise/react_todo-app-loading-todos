@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { UserWarning } from './UserWarning';
 import * as todosApi from './api/todos';
@@ -9,6 +9,8 @@ import type { Todo } from './types/Todo';
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const todoInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setErrorMessage('');
@@ -18,6 +20,26 @@ export const App: React.FC = () => {
       .then(setTodos)
       .catch(() => setErrorMessage('Unable to load todos'));
   }, []);
+
+  useEffect(() => {
+    if (todoInput.current) {
+      todoInput.current.focus();
+    }
+  }, [todos]);
+
+  useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setErrorMessage('');
+    }, 3000);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [errorMessage]);
 
   const activeTodosCount = useMemo(
     () => todos.filter(todo => !todo.completed).length,
@@ -33,6 +55,18 @@ export const App: React.FC = () => {
     () => todos.length > 0 && todos.every(todo => todo.completed),
     [todos],
   );
+
+  const filteredTodos = useMemo(() => {
+    if (filter === 'active') {
+      return todos.filter(todo => !todo.completed);
+    }
+
+    if (filter === 'completed') {
+      return todos.filter(todo => todo.completed);
+    }
+
+    return todos;
+  }, [todos, filter]);
 
   const handleTodoStatusChange = (
     todoId: number,
@@ -87,6 +121,7 @@ export const App: React.FC = () => {
           {/* Add a todo on form submit */}
           <form>
             <input
+              ref={todoInput}
               data-cy="NewTodoField"
               type="text"
               className="todoapp__new-todo"
@@ -96,7 +131,7 @@ export const App: React.FC = () => {
         </header>
 
         <section className="todoapp__main" data-cy="TodoList">
-          {todos.map(todo => (
+          {filteredTodos.map(todo => (
             <div
               key={todo.id}
               data-cy="Todo"
@@ -170,7 +205,13 @@ export const App: React.FC = () => {
             <nav className="filter" data-cy="Filter">
               <a
                 href="#/"
-                className="filter__link selected"
+                onClick={e => {
+                  e.preventDefault();
+                  setFilter('all');
+                }}
+                className={classNames('filter__link', {
+                  selected: filter === 'all',
+                })}
                 data-cy="FilterLinkAll"
               >
                 All
@@ -178,7 +219,13 @@ export const App: React.FC = () => {
 
               <a
                 href="#/active"
-                className="filter__link"
+                onClick={e => {
+                  e.preventDefault();
+                  setFilter('active');
+                }}
+                className={classNames('filter__link', {
+                  selected: filter === 'active',
+                })}
                 data-cy="FilterLinkActive"
               >
                 Active
@@ -186,7 +233,13 @@ export const App: React.FC = () => {
 
               <a
                 href="#/completed"
-                className="filter__link"
+                onClick={e => {
+                  e.preventDefault();
+                  setFilter('completed');
+                }}
+                className={classNames('filter__link', {
+                  selected: filter === 'completed',
+                })}
                 data-cy="FilterLinkCompleted"
               >
                 Completed
